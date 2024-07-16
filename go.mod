@@ -1,5 +1,5 @@
 module github.com/SolBaa/task-manager
 
-go 1.22.4
+go 1.22
 
-require github.com/go-chi/chi v1.5.5 // indirect
+require github.com/go-chi/chi/v5 v5.1.0
