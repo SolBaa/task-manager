@@ -1,33 +1,25 @@
-services:
-  web:
-    build: .
-    ports:
-      - 8080:8080
-    depends_on:
-      - mysql
-    env_file:
-      - .env
-    networks:
-      - app-network
-    entrypoint: ["./wait-for-it.sh", "mysql:3306", "--", "./main"]
+version: '3.1'
 
-  mysql:
+services:
+  db:
     image: mysql:latest
-    container_name: mysql_container
+    ports:
+      - "3306:3306"
     environment:
       MYSQL_ROOT_PASSWORD: root_password
       MYSQL_DATABASE: task_manager
       MYSQL_USER: sol
       MYSQL_PASSWORD: password
+
+  app:
+    build: .
     ports:
-      - "3306:3306"
-    volumes:
-      - mysql_data:/var/lib/mysql
-    networks:
-      - app-network
-
-volumes:
-  mysql_data:
-
-networks:
-  app-network:
+      - "8080:8080"
+    depends_on:
+      - db
+    environment:
+      DB_USER: sol
+      DB_PASSWORD: password
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: task_manager

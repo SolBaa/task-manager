@@ -18,6 +18,7 @@ type Config struct {
 
 func Initialize(db Config) (*sql.DB, error) {
 	connStr := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?parseTime=true", db.User, db.Password, db.Host, db.Port, db.DBName)
+	fmt.Println("Connection string:", connStr)
 	database, err := sql.Open("mysql", connStr)
 	if err != nil {
 		return nil, err
