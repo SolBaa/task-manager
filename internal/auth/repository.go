@@ -8,6 +8,7 @@ import (
 type AuthRepository interface {
 	Login()
 	Register(string, string, []byte) error
+	GetUserPasswd(string) (string, error)
 }
 
 type authRepository struct {
@@ -34,4 +35,14 @@ func (r *authRepository) Register(email, username string, password []byte) error
 	}
 	return nil
 
+}
+
+func (r *authRepository) GetUserPasswd(username string) (string, error) {
+	var password string
+	query := "SELECT password FROM task_manager.Users WHERE username = ?"
+	err := r.DB.QueryRow(query, username).Scan(&password)
+	if err != nil {
+		return "", fmt.Errorf("failed to get user password: %v", err)
+	}
+	return password, nil
 }

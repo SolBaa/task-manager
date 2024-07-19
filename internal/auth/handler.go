@@ -19,10 +19,9 @@ type LoginHandler struct {
 }
 
 func (h *LoginHandler) Login(w http.ResponseWriter, r *http.Request) {
+
 	var user models.UserRequest
-
 	err := json.NewDecoder(r.Body).Decode(&user)
-
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -35,9 +34,9 @@ func (h *LoginHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("Authorization", "Bearer "+token)
 	w.WriteHeader(http.StatusAccepted)
-	json.NewEncoder(w).Encode(map[string]string{"token": token})
-
+	json.NewEncoder(w).Encode(map[string]string{"message": "login successful", "token": token})
 }
 
 func (h *LoginHandler) Register(w http.ResponseWriter, r *http.Request) {

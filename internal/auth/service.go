@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"errors"
 	"os"
 	"time"
 
@@ -22,13 +23,33 @@ func NewService(authRepo AuthRepository) AuthService {
 	return &authService{authRepo}
 }
 
+type Claims struct {
+	Username string `json:"username"`
+	jwt.RegisteredClaims
+}
+
 func (s *authService) Login(user models.UserRequest) (string, error) {
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+	// Get the user from the database
+	passwd, err := s.authRepo.GetUserPasswd(user.Username)
+	if err != nil {
+		return "", err
+	}
 
-		"username": user.Username,
-		"exp":      time.Now().Add(time.Hour * 24).Unix(),
-	})
+	err = bcrypt.CompareHashAndPassword([]byte(passwd), []byte(user.Password))
+	if err != nil {
+		return "", errors.New("invalid username or password")
+	}
+
+	expirationTime := time.Now().Add(20 * time.Minute)
+	claims := &Claims{
+		Username: user.Username,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(expirationTime),
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenjwt := os.Getenv("JWT_SECRET")
 	tokenString, err := token.SignedString([]byte(tokenjwt))
 

@@ -14,11 +14,6 @@ type Config struct {
 }
 
 func LoadConfig() *Config {
-	// err := godotenv.Load(".env")
-	// if err != nil {
-	// 	log.Println("Error loading .env file, using default values")
-	// }
-
 	port, err := strconv.Atoi(getEnv("DB_PORT", "3306"))
 	if err != nil {
 		port = 3306
@@ -33,7 +28,7 @@ func LoadConfig() *Config {
 			Port:     port,
 			DBName:   getEnv("DB_NAME", "task_manager"),
 		},
-		JWTSecret: getEnv("JWT_SECRET", "your-secret-key"),
+		JWTSecret: getEnv("JWT_SECRET", "secret"),
 	}
 }
 
