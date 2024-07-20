@@ -7,6 +7,7 @@ import (
 	"github.com/SolBaa/task-manager/internal/auth"
 	"github.com/SolBaa/task-manager/internal/middleware"
 	"github.com/SolBaa/task-manager/internal/project"
+	"github.com/SolBaa/task-manager/internal/recipe"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -20,6 +21,10 @@ func SetupRouter(r *chi.Mux, db *sql.DB) chi.Router {
 	pr := project.NewRepository(db)
 	ps := project.NewService(pr)
 	ph := project.NewHandler(ps)
+
+	rr := recipe.NewRepository(db)
+	rs := recipe.NewService(rr)
+	rh := recipe.NewHandler(rs)
 
 	// taskRepo := task.NewRepository(db)
 	// taskService := task.NewService(taskRepo)
@@ -52,6 +57,17 @@ func SetupRouter(r *chi.Mux, db *sql.DB) chi.Router {
 		//         r.Put("/{taskId}", taskHandler.Update)
 		//         r.Delete("/{taskId}", taskHandler.Delete)
 		//     })
+
+	})
+
+	r.Route("/recipes", func(r chi.Router) {
+		r.Use(middleware.JwtMiddleware)
+		r.Post("/", rh.CreateRecipe)
+		r.Get("/", rh.GetAll)
+		r.Get("/{id}", rh.GetByID)
+
+		// r.Put("/{id}", recipeHandler.Update)
+		// r.Delete("/{id}", recipeHandler.Delete)
 	})
 
 	return r
