@@ -38,3 +38,21 @@ CREATE TABLE Project_User_Rel (
     FOREIGN KEY (user_id) REFERENCES Users(id),
     FOREIGN KEY (project_id) REFERENCES Projects(id)
 );
+
+CREATE TABLE Recipes (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE Ingredients (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    quantity VARCHAR(100) NOT NULL,
+    recipe_id INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (recipe_id) REFERENCES Recipes(id)
+);

@@ -37,33 +37,103 @@ func (r *recipeRepository) GetAll() ([]models.Recipe, error) {
 		}
 		recipes = append(recipes, recipe)
 	}
+
+	// Obtener los ingredientes
+	for i := range recipes {
+		ingredientQuery := "SELECT * FROM task_manager.Ingredients WHERE recipe_id = ?"
+		ingredientRows, err := r.DB.Query(ingredientQuery, recipes[i].ID)
+		if err != nil {
+			return nil, err
+		}
+		defer ingredientRows.Close()
+		for ingredientRows.Next() {
+			var ingredient models.Ingredient
+			err := ingredientRows.Scan(&ingredient.ID, &ingredient.RecipeID, &ingredient.Name, &ingredient.Quantity)
+			if err != nil {
+				return nil, err
+			}
+			recipes[i].Ingredients = append(recipes[i].Ingredients, ingredient)
+		}
+	}
 	return recipes, nil
 }
 
 func (r *recipeRepository) GetByID(id int) (models.Recipe, error) {
 	var recipe models.Recipe
-	query := "SELECT * FROM task_manager.Recipes WHERE id = ?"
+	query := `
+	SELECT r.id, r.name, r.description, i.id, i.recipe_id, i.name, i.quantity
+	FROM task_manager.Recipes r
+	LEFT JOIN task_manager.Ingredients i ON r.id = i.recipe_id
+	WHERE r.id = ?`
 	err := r.DB.QueryRow(query, id).Scan(&recipe.ID, &recipe.Name, &recipe.Description)
 	if err != nil {
 		return models.Recipe{}, err
 	}
+
+	// Obtener los ingredientes
+	ingredientQuery := "SELECT * FROM task_manager.Ingredients WHERE recipe_id = ?"
+	ingredientRows, err := r.DB.Query(ingredientQuery, id)
+	if err != nil {
+		return models.Recipe{}, err
+	}
+	defer ingredientRows.Close()
+	for ingredientRows.Next() {
+		var ingredient models.Ingredient
+		err := ingredientRows.Scan(&ingredient.ID, &ingredient.RecipeID, &ingredient.Name, &ingredient.Quantity)
+		if err != nil {
+			return models.Recipe{}, err
+		}
+		recipe.Ingredients = append(recipe.Ingredients, ingredient)
+	}
+
 	return recipe, nil
 }
 
 func (r *recipeRepository) CreateRecipe(recipe models.Recipe) (int, error) {
-	query := "INSERT INTO task_manager.Recipes (name, description) VALUES (?, ?)"
-	stmt, err := r.DB.Prepare(query)
+	tx, err := r.DB.Begin()
 	if err != nil {
 		return 0, err
 	}
-	defer stmt.Close()
-	res, err := stmt.Exec(recipe.Name, recipe.Description)
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		} else {
+			tx.Commit()
+		}
+	}()
+
+	// Insertar la receta
+	recipeQuery := "INSERT INTO task_manager.Recipes (name, description) VALUES (?, ?)"
+	recipeStmt, err := tx.Prepare(recipeQuery)
 	if err != nil {
 		return 0, err
 	}
-	id, err := res.LastInsertId()
+	defer recipeStmt.Close()
+
+	res, err := recipeStmt.Exec(recipe.Name, recipe.Description)
 	if err != nil {
 		return 0, err
 	}
-	return int(id), nil
+
+	recipeID, err := res.LastInsertId()
+	if err != nil {
+		return 0, err
+	}
+
+	// Insertar los ingredientes
+	ingredientQuery := "INSERT INTO task_manager.Ingredients (recipe_id, name, quantity) VALUES (?, ?, ?)"
+	ingredientStmt, err := tx.Prepare(ingredientQuery)
+	if err != nil {
+		return 0, err
+	}
+	defer ingredientStmt.Close()
+
+	for _, ingredient := range recipe.Ingredients {
+		_, err = ingredientStmt.Exec(recipeID, ingredient.Name, ingredient.Quantity)
+		if err != nil {
+			return 0, err
+		}
+	}
+
+	return int(recipeID), nil
 }
